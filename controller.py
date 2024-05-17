@@ -13,7 +13,7 @@ ge = ge_api.ge_api()
 assets = ge.get_collection_assets(ge.ret_input_collection)
 
 for asset in assets:
-    # download the markup
+	# download the markup
 	preview_image = ge.get_preview_image(asset,1280)
 	mark_up_image = ge.get_markup_image(asset)
 	mark_up_image.save(os.path.join(f"{PARENT_FOLDER}{asset['name']}"))
