@@ -227,29 +227,23 @@ function getGlobalEditResources(){
 }
  
 
-function berger_builder(processedFolder, outlinesFolder){ // takese a Folder object as a argument
-	// var processedFolder = Folder.selectDialog ("Please Select the 'Processed' folder"); // don't need this because it's passed
-	// don't need
-	// try{processedFolder.name == null}catch(err){return -1}
-	// don't need this next part becaues it's passed
-	// if(processedFolder.name.indexOf("Processed")<0){
-	// 	$.writeln(processedFolder.name.indexOf("Processed"));
-	// 	return -1;} // check that we have the processed folder
-//	set up the outlines folder
-	// identified in main wipbuilder
-	// try{ var outlinesFolder = Folder(processedFolder.fullName.replace("Processed","Outlines")); } catch(err){alert("OutlinesFolder Error\n" + err); return -1}
-	// if(!outlinesFolder.exists){ alert("Outlines not Found\nExpected folder at " + outlinesFolder+" but could not resolve."); return -1;}
-	//iterate over the processed items
-	var processedFiles = processedFolder.getFiles("*.tif");
-	var psb_processedFiles = processedFolder.getFiles("*.psb");
-	for (var x = 0; x <psb_processedFiles.length; x++){
-		processedFiles.push(psb_processedFiles[x])
-	}
-	for(var x =0; x < processedFiles.length; x++){ // iterate over the processed files    
-		var pFile = processedFiles[x];
-		var oFile = File(pFile.fullName.replace("PSBs","Outlines").replace(".tif","_m.jpg").replace(".psb","_m.jpg"));
-		if(!oFile.exists){continue;}
-		else{ 
+function berger_builder(pFile){
+		var oFile = File(pFile.fullName.replace("Processed","Outlines").replace(".tif","_m.jpg").replace(".psb","_m.jpg"));
+		var alphaFile = File(pFile.fullName.replace("Processed","Outlines").replace(".tif","_m.psd").replace(".psb","_m.psd"));
+		// check for a "psb" folder, if it's there, look for the processed file there
+		var calc_psb = pFile.fullName.replace("Processed","PSBs").replace(".tif",".psb")
+		var processedFolder = pFile.parent
+		if(File(calc_psb).exists){
+			pFile = File(calc_psb)
+		}
+
+
+		if(!oFile.exists && !alphaFile.exists){return;}
+		else{
+			// set the 'path' file based on alpha vs. outlines file
+			if (!oFile.exists){
+				oFile = alphaFile;
+			}
 			transferPaths(oFile,pFile);
 			var geResources = getGlobalEditResources() // get the globaledit resources
 			// load the PDFs
@@ -259,8 +253,6 @@ function berger_builder(processedFolder, outlinesFolder){ // takese a Folder obj
 			saveAsPSB(String(processedFolder.parent.fullName)+"/WIPs/", app.activeDocument.name.replace("_m",""));
 			app.activeDocument.close();
 		}
-		
-	}
 }
 	
 	
@@ -705,7 +697,10 @@ function berger_builder(processedFolder, outlinesFolder){ // takese a Folder obj
 				getCommandResult(command)
 				while(psb_dest.length != File(gx_calc_wips_path).length) {} // wait until the file finishes downloading
 				// execute the berger builder on the psb_dest
-				berger_builder(psb_folder,outlinesFolder)
+				// berger_builder(processedFolder,outlinesFolder)
+				// need to send a single file to the berger_builder, not the whole folder
+				berger_builder(curFile)
+				// berger_builder(psb_folder,outlinesFolder)
 				// CONTINUE TO NEXT FILE
 				continue;
 			}
@@ -820,7 +815,7 @@ function berger_builder(processedFolder, outlinesFolder){ // takese a Folder obj
 				
 				
 				// Transfer the stickies
-	//~ 			transferNotes(curFile, app.activeDocument);
+				// transferNotes(curFile, app.activeDocument);
 				
 			}
 			// If the outline file doesn't exist, open the processed file
@@ -1293,10 +1288,10 @@ function berger_builder(processedFolder, outlinesFolder){ // takese a Folder obj
 	
 			app.displayDialogs = _displayDialogs
 			// For these users, set up the place docs setting
-			if(user == "ccheatham"){
-				placeDocsAsSmartObject(false);
+			
+			
 				
-			}
+			
 		}
 		catch(e){}
 		
@@ -1347,13 +1342,12 @@ function berger_builder(processedFolder, outlinesFolder){ // takese a Folder obj
 	function preflight(doc){
 		// run basic preflight on the file by checking the metadata for the following:
 			// Status like "Ready for WIPing"
-	//	var statusHandling;
-		// set the doc name
+		
 		try{
-		var curFile = app.open(doc);
-		var docName = app.activeDocument.name.slice(0,app.activeDocument.name.indexOf('.'));
-		var folder = File(app.activeDocument.path).parent;
-		}catch(err){return -1;}
+			var curFile = app.open(doc);
+			var docName = app.activeDocument.name.slice(0,app.activeDocument.name.indexOf('.'));
+			var folder = File(app.activeDocument.path).parent;
+			}catch(err){return -1;}
 		if(folder.parent.parent.exists){ // check the parent's parent folder
 			folder = folder.parent;
 		}
@@ -1364,7 +1358,7 @@ function berger_builder(processedFolder, outlinesFolder){ // takese a Folder obj
 		jpgPath = File(decodeURI(jpgPath).trim())
 		// if  the jpg isn't found, prompt to continue
 	
-		if(!(jpgPath.exists)){
+		if(!jpgPath.exists){
 			logging(jpgPath + " + not found"); 
 			statusHandling = confirm("JPG not found for file.\n"+docName+"\nDo you wish to process this file?\nFile may be in incorrect status or have inappropriate metadata.");
 		}
